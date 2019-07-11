@@ -162,7 +162,7 @@ void JNICALL Agent::classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass)
 {
 	const string className = agent->getClassName(klass);
 
-	// We retransform the class after it has been loaded, so we could test the new class bytes.
+	// We retransform the class after it has been loaded, so we could test the new class bytes
 	//
 	if (agent->_classesToTest.count(className) > 0)
 	{
@@ -171,18 +171,27 @@ void JNICALL Agent::classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass)
 }
 
 void JNICALL Agent::classBytesLoaded(jvmtiEnv*, JNIEnv*, jclass classBeingRedefined, jobject, const char* name, jobject,
-	jint classBytesLength, const unsigned char* classBytes, jint*, unsigned char**)
+	jint classBytesLen, const unsigned char* classBytes, jint* newClassBytesLen, unsigned char** newClassBytes)
 {
-	if (agent->_classesToTest.count(name) > 0)
+	if (agent->_classesToTest.count(name) == 0)
 	{
-		if (classBeingRedefined != NULL)
-		{
-			agent->dumpClass(name, classBytes, classBytesLength, "_redefined");
-		}
-		else
-		{
-			agent->dumpClass(name, classBytes, classBytesLength, "_loaded");
-		}
+		return;
+	}
+
+	// We'll get here twice: once with the original bytes, and once with the redefined bytes
+	//
+	if (classBeingRedefined != NULL)
+	{
+		agent->dumpClass(name, classBytes, classBytesLen, "_redefined");
+
+		// Use the original bytes for the redefinition
+		//
+		*newClassBytesLen = classBytesLen;
+		*newClassBytes = const_cast<unsigned char*>(classBytes);
+	}
+	else
+	{
+		agent->dumpClass(name, classBytes, classBytesLen, "_loaded");
 	}
 }
 

@@ -17,7 +17,8 @@ public:
 	static void JNICALL vmInit(jvmtiEnv*, JNIEnv*, jthread);
 	static void JNICALL classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass);
 	static void JNICALL classBytesLoaded(jvmtiEnv*, JNIEnv*, jclass classBeingRedefined, jobject, const char* name,
-		jobject, jint classBytesLength, const unsigned char* classBytes, jint*, unsigned char**);
+		jobject, jint classBytesLen, const unsigned char* classBytes, jint* newClassBytesLen,
+		unsigned char** newClassBytes);
 
 	bool initialize();
 

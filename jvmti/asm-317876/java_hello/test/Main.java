@@ -8,16 +8,21 @@ class Main
 {
 	static public void main(String[] args) throws InterruptedException
 	{
+		System.out.println("------------------------------------------------------------");
+		System.out.println("Date test: started");
+		System.out.println("------------------------------------------------------------");
+
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
-		System.out.println(dateFormat.format(date)); //2016/11/16 12:08:43
 
-		for (int i = 0; i < 4; i++)
-		{
-			System.out.print(".");
-			Thread.sleep(500);
-		}
+		System.out.println("------------------------------------------------------------");
+		System.out.println("The time is " + dateFormat.format(date));
+		System.out.println("------------------------------------------------------------");
 
+		Thread.sleep(2000);
+
+		System.out.println("------------------------------------------------------------");
 		System.out.println("End of test.");
+		System.out.println("------------------------------------------------------------");
 	}
 }
