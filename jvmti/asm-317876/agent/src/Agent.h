@@ -2,6 +2,9 @@
 
 #include <jvmti.h>
 
+#include <set>
+#include <string>
+
 class Agent
 {
 public:
@@ -9,8 +12,6 @@ public:
 
 	Agent(jvmtiEnv* jvmti);
 	~Agent();
-
-	bool initialize();
 
 	static void JNICALL classBytesLoaded(jvmtiEnv*,
 	        JNIEnv*,
@@ -23,13 +24,18 @@ public:
 	        jint* newClassBytesLength,
 	        unsigned char** newClassBytes);
 
+	bool initialize();
+
 private:
 	bool initializeCapabilities();
 	bool initializeCallbacks();
+	void dumpClass(const std::string& name, const unsigned char* classBytes, jint classBytesLen);
 
 	jvmtiEnv* _jvmtiEnv;
 	jvmtiCapabilities _jvmtiCapabilities;
 	jvmtiEventCallbacks _jvmtiCallbacks;
 
 	bool _valid;
+
+	std::set<std::string> _classesToDump;
 };

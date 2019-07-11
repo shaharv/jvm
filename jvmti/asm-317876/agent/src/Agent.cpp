@@ -1,10 +1,13 @@
 #include "Agent.h"
 
+#include <algorithm>
 #include <iostream>
 
 using std::cerr;
 using std::cout;
 using std::endl;
+using std::set;
+using std::string;
 
 Agent* Agent::agent = NULL;
 
@@ -12,7 +15,8 @@ Agent::Agent(jvmtiEnv* jvmti) :
 	_jvmtiEnv(jvmti),
 	_jvmtiCapabilities(),
 	_jvmtiCallbacks(),
-	_valid(false)
+	_valid(false),
+	_classesToDump()
 {
 	cout << "Hello from JVMTI agent!" << endl;
 
@@ -22,17 +26,13 @@ Agent::Agent(jvmtiEnv* jvmti) :
 	{
 		cerr << "Agent initialization failed!" << endl;
 	}
+
+	_classesToDump.insert("java/util/Locale");
 }
 
 Agent::~Agent()
 {
 
-}
-
-bool Agent::initialize()
-{
-	return ((initializeCapabilities()) &&
-		(initializeCallbacks()));
 }
 
 void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
@@ -46,12 +46,24 @@ void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
 	jint* newClassBytesLength,
 	unsigned char** newClassBytes)
 {
-	cout << "Loading bytes for class: " << name << endl;
+	if (agent->_classesToDump.count(name) > 0)
+	{
+		agent->dumpClass(name, classBytes, classBytesLength);
+		return;
+	}
+}
+
+bool Agent::initialize()
+{
+	return ((initializeCapabilities()) &&
+		(initializeCallbacks()));
 }
 
 bool Agent::initializeCapabilities()
 {
 	_jvmtiCapabilities.can_generate_all_class_hook_events = JVMTI_ENABLE;
+	_jvmtiCapabilities.can_retransform_classes = JVMTI_ENABLE;
+	_jvmtiCapabilities.can_retransform_any_class = JVMTI_ENABLE;
 
 	jvmtiError error = _jvmtiEnv->AddCapabilities(&_jvmtiCapabilities);
 
@@ -72,6 +84,36 @@ bool Agent::initializeCallbacks()
 	error = _jvmtiEnv->SetEventCallbacks(&_jvmtiCallbacks, (jint)sizeof(_jvmtiCallbacks));
 
 	return (error == JVMTI_ERROR_NONE);
+}
+
+void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint classBytesLen)
+{
+	cout << "Dumping bytes for class: " << name << endl;
+
+	string classFilePath = name;
+	std::replace(classFilePath.begin(), classFilePath.end(), '/', '_');
+	classFilePath.append(".class");
+
+	FILE* classFile = fopen(classFilePath.c_str(), "wb");
+
+	if (classFile == NULL)
+	{
+		cerr << "Failed creating class file in " << classFilePath << endl;
+		return;
+	}
+
+	size_t writtenBytes = fwrite(classBytes, sizeof(char), classBytesLen, classFile);
+
+	if (writtenBytes != static_cast<size_t>(classBytesLen))
+	{
+		cerr << "Only " << writtenBytes << " bytes written for " << name << " (" << classBytesLen << " expected)." << endl;
+	}
+	else
+	{
+		cout << "Class bytes written to " << classFilePath << endl;
+	}
+
+	fclose(classFile);
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char*, void*)
