@@ -130,6 +130,7 @@ void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint 
 	std::replace(classFilePath.begin(), classFilePath.end(), '/', '_');
 	classFilePath.append(classState);
 	classFilePath.append(".class");
+	classFilePath = "out/" + classFilePath;
 
 	FILE* classFile = fopen(classFilePath.c_str(), "wb");
 
