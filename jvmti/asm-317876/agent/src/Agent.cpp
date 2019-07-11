@@ -36,30 +36,6 @@ Agent::~Agent()
 
 }
 
-void JNICALL Agent::vmInit(jvmtiEnv*, JNIEnv*, jthread)
-{
-	cout << "VM initialized." << endl;
-}
-
-void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
-	JNIEnv*,
-	jclass classBeingRedefined,
-	jobject,
-	const char* name,
-	jobject,
-	jint classBytesLength,
-	const unsigned char* classBytes,
-	jint* newClassBytesLength,
-	unsigned char** newClassBytes)
-{
-	if (agent->_classesToTest.count(name) > 0)
-	{
-		agent->dumpClass(name, classBytes, classBytesLength);
-
-		return;
-	}
-}
-
 bool Agent::initialize()
 {
 	return ((initializeCapabilities()) &&
@@ -93,8 +69,16 @@ bool Agent::initializeCallbacks()
 		return false;
 	}
 
+	error = _jvmtiEnv->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_PREPARE, NULL);
+
+	if (error != JVMTI_ERROR_NONE)
+	{
+		return false;
+	}
+
 	_jvmtiCallbacks.VMInit = &vmInit;
 	_jvmtiCallbacks.ClassFileLoadHook = &classBytesLoaded;
+	_jvmtiCallbacks.ClassPrepare = &classLoaded;
 
 	error = _jvmtiEnv->SetEventCallbacks(&_jvmtiCallbacks, (jint)sizeof(_jvmtiCallbacks));
 
@@ -119,6 +103,24 @@ bool Agent::retransformClasses()
 	}
 
 	return hadErrors;
+}
+
+string Agent::getClassName(jclass klass)
+{
+	char* rawClassName;
+
+	jvmtiError error = agent->_jvmtiEnv->GetClassSignature(klass, &rawClassName, NULL);
+
+	if (error != JVMTI_ERROR_NONE)
+	{
+		cerr << "Failed getting class name for " << klass << endl;
+		return "";
+	}
+
+	string className = rawClassName;
+	className = className.substr(1, className.length() - 2);
+
+	return className;
 }
 
 void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint classBytesLen)
@@ -149,6 +151,39 @@ void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint 
 	}
 
 	fclose(classFile);
+}
+
+void JNICALL Agent::vmInit(jvmtiEnv*, JNIEnv*, jthread)
+{
+	cout << "VM initialized." << endl;
+}
+
+void JNICALL Agent::classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass)
+{
+	const string className = agent->getClassName(klass);
+
+	if (agent->_classesToTest.count(className) > 0)
+	{
+		agent->_jclassesToRetransform.push_back(klass);
+		cout << "Added " << className << " to classes to retransform." << endl;
+	}
+}
+
+void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
+	JNIEnv*,
+	jclass classBeingRedefined,
+	jobject,
+	const char* name,
+	jobject,
+	jint classBytesLength,
+	const unsigned char* classBytes,
+	jint* newClassBytesLength,
+	unsigned char** newClassBytes)
+{
+	if (agent->_classesToTest.count(name) > 0)
+	{
+		agent->dumpClass(name, classBytes, classBytesLength);
+	}
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char*, void*)

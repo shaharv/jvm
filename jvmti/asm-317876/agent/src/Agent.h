@@ -15,6 +15,7 @@ public:
 	~Agent();
 
 	static void JNICALL vmInit(jvmtiEnv*, JNIEnv*, jthread);
+	static void JNICALL classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass);
 	static void JNICALL classBytesLoaded(jvmtiEnv*,
 	        JNIEnv*,
 	        jclass classBeingRedefined,
@@ -32,6 +33,7 @@ private:
 	bool initializeCapabilities();
 	bool initializeCallbacks();
 	bool retransformClasses();
+	std::string getClassName(jclass klass);
 	void dumpClass(const std::string& name, const unsigned char* classBytes, jint classBytesLen);
 
 	jvmtiEnv* _jvmtiEnv;
