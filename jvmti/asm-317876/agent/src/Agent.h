@@ -10,7 +10,9 @@ public:
 	Agent(jvmtiEnv* jvmti);
 	~Agent();
 
+	bool initialize();
+
 private:
 	jvmtiEnv* _jvmtiEnv;
-	JNIEnv* _jniEnv;
+	jvmtiCapabilities _jvmtiCapabilities;
 };
