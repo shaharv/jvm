@@ -24,7 +24,7 @@ public:
 private:
 	bool initializeCapabilities();
 	bool initializeCallbacks();
-	bool retransformClasses();
+	bool retransformClass(jclass klass);
 	std::string getClassName(jclass klass);
 	void dumpClass(const std::string& name, const unsigned char* classBytes, jint classBytesLen,
 		const std::string& classState);
@@ -36,5 +36,4 @@ private:
 	bool _valid;
 
 	std::set<std::string> _classesToTest;
-	std::vector<jclass> _jclassesToRetransform;
 };

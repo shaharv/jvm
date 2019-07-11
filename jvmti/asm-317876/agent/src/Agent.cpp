@@ -28,7 +28,10 @@ Agent::Agent(jvmtiEnv* jvmti) :
 		cerr << "Agent initialization failed!" << endl;
 	}
 
+	// List of classes to dump bytes for, when first loaded and when redefined
+	//
 	_classesToTest.insert("java/util/Date");
+	_classesToTest.insert("java/text/SimpleDateFormat");
 }
 
 Agent::~Agent()
@@ -85,28 +88,20 @@ bool Agent::initializeCallbacks()
 	return (error == JVMTI_ERROR_NONE);
 }
 
-bool Agent::retransformClasses()
+bool Agent::retransformClass(jclass klass)
 {
-	bool hadErrors = false;
+	jvmtiError error = agent->_jvmtiEnv->RetransformClasses(1, &klass);
 
-	for (vector<jclass>::iterator it = agent->_jclassesToRetransform.begin(); it != agent->_jclassesToRetransform.end(); ++it)
+	if (error == JVMTI_ERROR_NONE)
 	{
-		jclass jclassToRetransform = *it;
-
-		jvmtiError error = agent->_jvmtiEnv->RetransformClasses(1, &jclassToRetransform);
-
-		if (error == JVMTI_ERROR_NONE)
-		{
-			cout << "Class retransformed: " << &jclassToRetransform << endl;
-		}
-		else
-		{
-			cerr << "Failed retransforming jclass " << &jclassToRetransform << " (error = " << error << ")" << endl;
-			hadErrors = true;
-		}
+		cout << "Class successfully retransformed: " << klass << endl;
+	}
+	else
+	{
+		cerr << "Failed retransforming jclass " << klass << " (error = " << error << ")" << endl;
 	}
 
-	return hadErrors;
+	return (error == JVMTI_ERROR_NONE);
 }
 
 string Agent::getClassName(jclass klass)
@@ -167,12 +162,11 @@ void JNICALL Agent::classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass)
 {
 	const string className = agent->getClassName(klass);
 
+	// We retransform the class after it has been loaded, so we could test the new class bytes.
+	//
 	if (agent->_classesToTest.count(className) > 0)
 	{
-		agent->_jclassesToRetransform.push_back(klass);
-		cout << "Added " << className << " to classes to retransform (jclass = " << klass << ")" << endl;
-
-		agent->retransformClasses();
+		agent->retransformClass(klass);
 	}
 }
 
@@ -181,14 +175,14 @@ void JNICALL Agent::classBytesLoaded(jvmtiEnv*, JNIEnv*, jclass classBeingRedefi
 {
 	if (agent->_classesToTest.count(name) > 0)
 	{
-		string classState = "_loaded";
-
 		if (classBeingRedefined != NULL)
 		{
-			classState = "_redefined";
+			agent->dumpClass(name, classBytes, classBytesLength, "_redefined");
 		}
-
-		agent->dumpClass(name, classBytes, classBytesLength, classState);
+		else
+		{
+			agent->dumpClass(name, classBytes, classBytesLength, "_loaded");
+		}
 	}
 }
 
