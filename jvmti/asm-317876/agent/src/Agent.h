@@ -4,6 +4,7 @@
 
 #include <set>
 #include <string>
+#include <vector>
 
 class Agent
 {
@@ -30,6 +31,7 @@ public:
 private:
 	bool initializeCapabilities();
 	bool initializeCallbacks();
+	bool retransformClasses();
 	void dumpClass(const std::string& name, const unsigned char* classBytes, jint classBytesLen);
 
 	jvmtiEnv* _jvmtiEnv;
@@ -39,5 +41,5 @@ private:
 	bool _valid;
 
 	std::set<std::string> _classesToTest;
-	std::set<jclass> _classesToRetransform;
+	std::vector<jclass> _jclassesToRetransform;
 };

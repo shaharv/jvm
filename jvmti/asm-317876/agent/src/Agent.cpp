@@ -8,6 +8,7 @@ using std::cout;
 using std::endl;
 using std::set;
 using std::string;
+using std::vector;
 
 Agent* Agent::agent = NULL;
 
@@ -55,8 +56,6 @@ void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
 	{
 		agent->dumpClass(name, classBytes, classBytesLength);
 
-		agent->_classesToRetransform.insert(classBeingRedefined);
-
 		return;
 	}
 }
@@ -100,6 +99,26 @@ bool Agent::initializeCallbacks()
 	error = _jvmtiEnv->SetEventCallbacks(&_jvmtiCallbacks, (jint)sizeof(_jvmtiCallbacks));
 
 	return (error == JVMTI_ERROR_NONE);
+}
+
+bool Agent::retransformClasses()
+{
+	bool hadErrors = false;
+
+	for (vector<jclass>::iterator it = agent->_jclassesToRetransform.begin(); it != agent->_jclassesToRetransform.end(); ++it)
+	{
+		jclass jclassToRetransform = *it;
+
+		jvmtiError error = agent->_jvmtiEnv->RetransformClasses(1, &jclassToRetransform);
+
+		if (error != JVMTI_ERROR_NONE)
+		{
+			cerr << "Failed retransforming jclass " << jclassToRetransform << endl;
+			hadErrors = true;
+		}
+	}
+
+	return hadErrors;
 }
 
 void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint classBytesLen)
