@@ -8,7 +8,7 @@ fi
 # Build the sample JVMTI agent
 #
 cd agent
-rm -r build
+rm -rf build
 ./gen-build.sh
 cd build
 make
