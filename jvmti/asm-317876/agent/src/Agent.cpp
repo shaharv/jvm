@@ -35,7 +35,7 @@ bool Agent::initialize()
 		(initializeCallbacks()));
 }
 
-static void JNICALL classBytesLoaded(jvmtiEnv*,
+void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
 	JNIEnv*,
 	jclass,
 	jobject,

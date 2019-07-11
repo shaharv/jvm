@@ -12,6 +12,17 @@ public:
 
 	bool initialize();
 
+	static void JNICALL classBytesLoaded(jvmtiEnv*,
+	        JNIEnv*,
+	        jclass,
+	        jobject,
+	        const char* name,
+	        jobject,
+	        jint classBytesLength,
+	        const unsigned char* classBytes,
+	        jint* newClassBytesLength,
+	        unsigned char** newClassBytes);
+
 private:
 	bool initializeCapabilities();
 	bool initializeCallbacks();
