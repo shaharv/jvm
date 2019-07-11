@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+using std::cerr;
+using std::cout;
+using std::endl;
+
 Agent* Agent::agent = NULL;
 
 Agent::Agent(jvmtiEnv* jvmti) :
@@ -10,13 +14,13 @@ Agent::Agent(jvmtiEnv* jvmti) :
 	_jvmtiCallbacks(),
 	_valid(false)
 {
-	std::cout << "Hello from JVMTI agent!" << std::endl;
+	cout << "Hello from JVMTI agent!" << endl;
 
 	_valid = initialize();
 
 	if (!_valid)
 	{
-		std::cout << "Agent initialization failed!" << std::endl;
+		cerr << "Agent initialization failed!" << endl;
 	}
 }
 
@@ -31,18 +35,18 @@ bool Agent::initialize()
 		(initializeCallbacks()));
 }
 
-static void JNICALL classBytesLoaded(jvmtiEnv *jvmti_env,
-	JNIEnv* jni_env,
-	jclass class_being_redefined,
-	jobject loader,
+static void JNICALL classBytesLoaded(jvmtiEnv*,
+	JNIEnv*,
+	jclass,
+	jobject,
 	const char* name,
-	jobject protection_domain,
-	jint class_data_len,
-	const unsigned char* class_data,
-	jint* new_class_data_len,
-	unsigned char** new_class_data)
+	jobject,
+	jint classBytesLength,
+	const unsigned char* classBytes,
+	jint* newClassBytesLength,
+	unsigned char** newClassBytes)
 {
-	std::cout << "Loading bytes for class: " << name << std::endl;
+	cout << "Loading bytes for class: " << name << endl;
 }
 
 bool Agent::initializeCapabilities()
@@ -77,7 +81,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char*, void*)
 
 	if ((res != JNI_OK) || (jvmti == NULL))
 	{
-		std::cerr << "ERROR: Unable to get JVMTI environment." << std::endl;
+		cerr << "ERROR: Unable to get JVMTI environment." << endl;
 		return JNI_ERR;
 	}
 
@@ -88,7 +92,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char*, void*)
 
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM*)
 {
-	std::cout << "VM death started. Goodbye." << std::endl;
+	cout << "VM death started. Goodbye." << endl;
 
 	delete Agent::agent;
 }
