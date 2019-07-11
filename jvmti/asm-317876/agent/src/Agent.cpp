@@ -28,7 +28,7 @@ Agent::Agent(jvmtiEnv* jvmti) :
 		cerr << "Agent initialization failed!" << endl;
 	}
 
-	_classesToTest.insert("java/util/Locale");
+	_classesToTest.insert("java/util/Date");
 }
 
 Agent::~Agent()
@@ -95,9 +95,13 @@ bool Agent::retransformClasses()
 
 		jvmtiError error = agent->_jvmtiEnv->RetransformClasses(1, &jclassToRetransform);
 
-		if (error != JVMTI_ERROR_NONE)
+		if (error == JVMTI_ERROR_NONE)
 		{
-			cerr << "Failed retransforming jclass " << jclassToRetransform << endl;
+			cout << "Class retransformed: " << &jclassToRetransform << endl;
+		}
+		else
+		{
+			cerr << "Failed retransforming jclass " << &jclassToRetransform << " (error = " << error << ")" << endl;
 			hadErrors = true;
 		}
 	}
@@ -123,12 +127,13 @@ string Agent::getClassName(jclass klass)
 	return className;
 }
 
-void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint classBytesLen)
+void Agent::dumpClass(const string& name, const unsigned char* classBytes, jint classBytesLen, const string& classState)
 {
 	cout << "Dumping bytes for class: " << name << endl;
 
 	string classFilePath = name;
 	std::replace(classFilePath.begin(), classFilePath.end(), '/', '_');
+	classFilePath.append(classState);
 	classFilePath.append(".class");
 
 	FILE* classFile = fopen(classFilePath.c_str(), "wb");
@@ -165,24 +170,25 @@ void JNICALL Agent::classLoaded(jvmtiEnv*, JNIEnv*, jthread, jclass klass)
 	if (agent->_classesToTest.count(className) > 0)
 	{
 		agent->_jclassesToRetransform.push_back(klass);
-		cout << "Added " << className << " to classes to retransform." << endl;
+		cout << "Added " << className << " to classes to retransform (jclass = " << klass << ")" << endl;
+
+		agent->retransformClasses();
 	}
 }
 
-void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
-	JNIEnv*,
-	jclass classBeingRedefined,
-	jobject,
-	const char* name,
-	jobject,
-	jint classBytesLength,
-	const unsigned char* classBytes,
-	jint* newClassBytesLength,
-	unsigned char** newClassBytes)
+void JNICALL Agent::classBytesLoaded(jvmtiEnv*, JNIEnv*, jclass classBeingRedefined, jobject, const char* name, jobject,
+	jint classBytesLength, const unsigned char* classBytes, jint*, unsigned char**)
 {
 	if (agent->_classesToTest.count(name) > 0)
 	{
-		agent->dumpClass(name, classBytes, classBytesLength);
+		string classState = "_loaded";
+
+		if (classBeingRedefined != NULL)
+		{
+			classState = "_redefined";
+		}
+
+		agent->dumpClass(name, classBytes, classBytesLength, classState);
 	}
 }
 
