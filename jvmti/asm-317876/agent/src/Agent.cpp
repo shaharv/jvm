@@ -16,7 +16,7 @@ Agent::Agent(jvmtiEnv* jvmti) :
 	_jvmtiCapabilities(),
 	_jvmtiCallbacks(),
 	_valid(false),
-	_classesToDump()
+	_classesToTest()
 {
 	cout << "Hello from JVMTI agent!" << endl;
 
@@ -27,7 +27,7 @@ Agent::Agent(jvmtiEnv* jvmti) :
 		cerr << "Agent initialization failed!" << endl;
 	}
 
-	_classesToDump.insert("java/util/Locale");
+	_classesToTest.insert("java/util/Locale");
 }
 
 Agent::~Agent()
@@ -35,9 +35,14 @@ Agent::~Agent()
 
 }
 
+void JNICALL Agent::vmInit(jvmtiEnv*, JNIEnv*, jthread)
+{
+	cout << "VM initialized." << endl;
+}
+
 void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
 	JNIEnv*,
-	jclass,
+	jclass classBeingRedefined,
 	jobject,
 	const char* name,
 	jobject,
@@ -46,9 +51,12 @@ void JNICALL Agent::classBytesLoaded(jvmtiEnv*,
 	jint* newClassBytesLength,
 	unsigned char** newClassBytes)
 {
-	if (agent->_classesToDump.count(name) > 0)
+	if (agent->_classesToTest.count(name) > 0)
 	{
 		agent->dumpClass(name, classBytes, classBytesLength);
+
+		agent->_classesToRetransform.insert(classBeingRedefined);
+
 		return;
 	}
 }
@@ -72,13 +80,21 @@ bool Agent::initializeCapabilities()
 
 bool Agent::initializeCallbacks()
 {
-	jvmtiError error = _jvmtiEnv->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
+	jvmtiError error = _jvmtiEnv->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_VM_INIT, NULL);
 
 	if (error != JVMTI_ERROR_NONE)
 	{
 		return false;
 	}
 
+	error = _jvmtiEnv->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
+
+	if (error != JVMTI_ERROR_NONE)
+	{
+		return false;
+	}
+
+	_jvmtiCallbacks.VMInit = &vmInit;
 	_jvmtiCallbacks.ClassFileLoadHook = &classBytesLoaded;
 
 	error = _jvmtiEnv->SetEventCallbacks(&_jvmtiCallbacks, (jint)sizeof(_jvmtiCallbacks));
@@ -129,7 +145,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char*, void*)
 
 	Agent::agent = new Agent(jvmti);
 
-	return 0;
+	return JNI_OK;
 }
 
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM*)

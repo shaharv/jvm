@@ -13,9 +13,10 @@ public:
 	Agent(jvmtiEnv* jvmti);
 	~Agent();
 
+	static void JNICALL vmInit(jvmtiEnv*, JNIEnv*, jthread);
 	static void JNICALL classBytesLoaded(jvmtiEnv*,
 	        JNIEnv*,
-	        jclass,
+	        jclass classBeingRedefined,
 	        jobject,
 	        const char* name,
 	        jobject,
@@ -37,5 +38,6 @@ private:
 
 	bool _valid;
 
-	std::set<std::string> _classesToDump;
+	std::set<std::string> _classesToTest;
+	std::set<jclass> _classesToRetransform;
 };
