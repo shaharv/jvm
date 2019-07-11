@@ -6,11 +6,18 @@ Agent* Agent::agent = NULL;
 
 Agent::Agent(jvmtiEnv* jvmti) :
 	_jvmtiEnv(jvmti),
-	_jvmtiCapabilities()
+	_jvmtiCapabilities(),
+	_jvmtiCallbacks(),
+	_valid(false)
 {
 	std::cout << "Hello from JVMTI agent!" << std::endl;
 
-	initialize();
+	_valid = initialize();
+
+	if (!_valid)
+	{
+		std::cout << "Agent initialization failed!" << std::endl;
+	}
 }
 
 Agent::~Agent()
@@ -20,25 +27,47 @@ Agent::~Agent()
 
 bool Agent::initialize()
 {
+	return ((initializeCapabilities()) &&
+		(initializeCallbacks()));
+}
+
+static void JNICALL classBytesLoaded(jvmtiEnv *jvmti_env,
+	JNIEnv* jni_env,
+	jclass class_being_redefined,
+	jobject loader,
+	const char* name,
+	jobject protection_domain,
+	jint class_data_len,
+	const unsigned char* class_data,
+	jint* new_class_data_len,
+	unsigned char** new_class_data)
+{
+	std::cout << "Loading bytes for class: " << name << std::endl;
+}
+
+bool Agent::initializeCapabilities()
+{
 	_jvmtiCapabilities.can_generate_all_class_hook_events = JVMTI_ENABLE;
 
 	jvmtiError error = _jvmtiEnv->AddCapabilities(&_jvmtiCapabilities);
 
+	return (error == JVMTI_ERROR_NONE);
+}
+
+bool Agent::initializeCallbacks()
+{
+	jvmtiError error = _jvmtiEnv->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
+
 	if (error != JVMTI_ERROR_NONE)
 	{
 		return false;
 	}
 
-	error = _jvmtiEnv->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
+	_jvmtiCallbacks.ClassFileLoadHook = &classBytesLoaded;
 
-	if (error != JVMTI_ERROR_NONE)
-	{
-		return false;
-	}
+	error = _jvmtiEnv->SetEventCallbacks(&_jvmtiCallbacks, (jint)sizeof(_jvmtiCallbacks));
 
-	std::cout << "OK!" << std::endl;
-
-	return true;
+	return (error == JVMTI_ERROR_NONE);
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char*, void*)

@@ -13,6 +13,12 @@ public:
 	bool initialize();
 
 private:
+	bool initializeCapabilities();
+	bool initializeCallbacks();
+
 	jvmtiEnv* _jvmtiEnv;
 	jvmtiCapabilities _jvmtiCapabilities;
+	jvmtiEventCallbacks _jvmtiCallbacks;
+
+	bool _valid;
 };
