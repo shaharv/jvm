@@ -9,6 +9,7 @@ fi
 #
 mkdir -p out
 rm -f out/*.class
+rm -f out/*.txt
 $JAVA_HOME/bin/java -agentpath:$PWD/agent/build/libagent.so -jar $PWD/java_hello/build/java_hello.jar
 
 # Decompile the test classes.

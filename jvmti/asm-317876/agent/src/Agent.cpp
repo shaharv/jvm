@@ -49,7 +49,6 @@ bool Agent::initializeCapabilities()
 {
 	_jvmtiCapabilities.can_generate_all_class_hook_events = JVMTI_ENABLE;
 	_jvmtiCapabilities.can_retransform_classes = JVMTI_ENABLE;
-	_jvmtiCapabilities.can_retransform_any_class = JVMTI_ENABLE;
 
 	jvmtiError error = _jvmtiEnv->AddCapabilities(&_jvmtiCapabilities);
 
