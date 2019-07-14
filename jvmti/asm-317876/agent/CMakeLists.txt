@@ -9,4 +9,6 @@ if (UNIX)
         include_directories($ENV{JAVA_HOME}/include/linux)
 endif ()
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
 add_library(agent SHARED src/Agent.cpp)
