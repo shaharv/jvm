@@ -9,6 +9,10 @@ if (UNIX)
         include_directories($ENV{JAVA_HOME}/include/linux)
 endif ()
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+if (CMAKE_SYSTEM_NAME STREQUAL "AIX")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -q64")
+else ()
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+endif ()
 
 add_library(agent SHARED src/Agent.cpp)
