@@ -3,6 +3,9 @@
 Simple JVMTI agent reproducer for the JVM issue reported in:  
 https://gitlab.ow2.org/asm/asm/issues/317876
 
+The resulting JDK ticket:   
+https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8228604
+
 ### Test requirements
 
 The following programs are required for running the JVMTI agent test:
